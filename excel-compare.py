@@ -53,6 +53,24 @@ class SpreadsheetComparator:
         ttk.Label(main_frame, text="Pestaña 2:").grid(row=3, column=0, sticky=tk.W, pady=5)
         self.sheet2_combo = ttk.Combobox(main_frame, state="disabled")
         self.sheet2_combo.grid(row=3, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        
+        # Selección de columnas clave
+        ttk.Label(main_frame, text="Columnas Identificadoras:").grid(row=4, column=0, sticky=tk.W, pady=5)
+
+        col_select_frame = ttk.Frame(main_frame)
+        col_select_frame.grid(row=4, column=1, sticky=tk.W)
+
+        self.col_selector = ttk.Combobox(col_select_frame, state="readonly", width=5)
+        self.col_selector.grid(row=0, column=0)
+
+        self.selected_cols = []
+        self.col_list_label = ttk.Label(col_select_frame, text="[]")
+        self.col_list_label.grid(row=0, column=2, padx=10)
+
+        add_col_button = ttk.Button(col_select_frame, text="Añadir", command=self.add_selected_column)
+        add_col_button.grid(row=0, column=1, padx=5)
+
+        
 
         # Botón de comparación
         compare_button = ttk.Button(main_frame, text="Comparar Pestañas", 
@@ -135,6 +153,13 @@ class SpreadsheetComparator:
                 # Limpiar selecciones previas
                 self.sheet1_combo.set("")
                 self.sheet2_combo.set("")
+                
+                # Actualizar selector de columnas disponibles
+                num_cols = max([len(pd.read_excel(self.excel_file, sheet_name=sh).columns) for sh in self.sheet_names])
+                self.col_selector.config(values=[str(i) for i in range(num_cols)], state="readonly")
+                self.selected_cols = []
+                self.col_list_label.config(text="[]")
+
 
                 messagebox.showinfo("Éxito", 
                                    f"Archivo cargado correctamente.\n"
@@ -187,7 +212,15 @@ class SpreadsheetComparator:
     def find_differences(self, df1, df2, sheet1_name, sheet2_name):
         """Encontrar diferencias entre dos DataFrames"""
         differences = []
-
+        # Extraer identificadores seleccionados
+        identificadores = {}
+        for col_idx in self.selected_cols:
+            val = None
+            if i < len(df1) and col_idx < df1.shape[1]:
+                val = df1.iloc[i].iloc[col_idx]
+            elif i < len(df2) and col_idx < df2.shape[1]:
+                val = df2.iloc[i].iloc[col_idx]
+            identificadores[f'Columna_{col_idx}'] = val
         # Comparar dimensiones
         if df1.shape != df2.shape:
             differences.append({
@@ -196,7 +229,8 @@ class SpreadsheetComparator:
                 'Fila': '-',
                 'Columna': '-',
                 f'Valor en {sheet1_name}': f'{df1.shape[0]} filas, {df1.shape[1]} columnas',
-                f'Valor en {sheet2_name}': f'{df2.shape[0]} filas, {df2.shape[1]} columnas'
+                f'Valor en {sheet2_name}': f'{df2.shape[0]} filas, {df2.shape[1]} columnas',
+                **identificadores
             })
 
         # Obtener columnas comunes y diferentes
@@ -215,7 +249,8 @@ class SpreadsheetComparator:
                 'Fila': '-',
                 'Columna': col,
                 f'Valor en {sheet1_name}': 'Existe',
-                f'Valor en {sheet2_name}': 'No existe'
+                f'Valor en {sheet2_name}': 'No existe',
+                **identificadores
             })
 
         for col in only_in_2:
@@ -226,7 +261,8 @@ class SpreadsheetComparator:
                 'Fila': '-',
                 'Columna': col,
                 f'Valor en {sheet1_name}': 'No existe',
-                f'Valor en {sheet2_name}': 'Existe'
+                f'Valor en {sheet2_name}': 'Existe',
+                **identificadores
             })
 
         # Comparar valores en columnas comunes
@@ -252,7 +288,8 @@ class SpreadsheetComparator:
                             'Fila': i+1,
                             'Columna': col,
                             f'Valor en {sheet1_name}': str(val1) if not pd.isna(val1) else 'NaN',
-                            f'Valor en {sheet2_name}': str(val2) if not pd.isna(val2) else 'NaN'
+                            f'Valor en {sheet2_name}': str(val2) if not pd.isna(val2) else 'NaN',
+                            **identificadores
                         })
                 except Exception:
                     continue
@@ -267,7 +304,8 @@ class SpreadsheetComparator:
                     'Fila': i+1,
                     'Columna': '-',
                     f'Valor en {sheet1_name}': 'Existe',
-                    f'Valor en {sheet2_name}': 'No existe'
+                    f'Valor en {sheet2_name}': 'No existe',
+                    **identificadores
                 })
 
         if len(df2) > min_rows:
@@ -279,7 +317,8 @@ class SpreadsheetComparator:
                     'Fila': i+1,
                     'Columna': '-',
                     f'Valor en {sheet1_name}': 'No existe',
-                    f'Valor en {sheet2_name}': 'Existe'
+                    f'Valor en {sheet2_name}': 'Existe',
+                    **identificadores
                 })
 
         return differences
@@ -362,6 +401,14 @@ class SpreadsheetComparator:
 
         except Exception as e:
             messagebox.showerror("Error", f"Error al exportar:\n{str(e)}")
+            
+    def add_selected_column(self):
+        """Agregar columna seleccionada a la lista de columnas identificadoras"""
+        col = self.col_selector.get()
+        if col and int(col) not in self.selected_cols:
+            self.selected_cols.append(int(col))
+            self.col_list_label.config(text=str(self.selected_cols))
+
 
 def main():
     root = tk.Tk()
