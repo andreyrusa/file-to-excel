@@ -303,6 +303,11 @@ class SpreadsheetComparator:
         for i, diff in enumerate(differences):
             values = [diff[col] for col in columns]
             self.results_tree.insert("", "end", iid=i, values=values)
+            # Configura tags:
+            self.results_tree.tag_configure("Valor diferente", background="#ffd6d6")
+            self.results_tree.tag_configure("Columna faltante", background="#ffffcc")
+            self.results_tree.tag_configure("Fila adicional", background="#d6f5d6")
+            self.results_tree.tag_configure("Dimensiones", background="#d6e0f5")
 
         self.results_info.config(text=f"Se encontraron {len(differences)} diferencias")
 
