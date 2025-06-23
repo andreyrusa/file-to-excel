@@ -209,6 +209,7 @@ class SpreadsheetComparator:
         # Reportar columnas diferentes
         for col in only_in_1:
             differences.append({
+                'BOC': str(df1.iloc[i].iloc[7]) if df1.shape[1] > 7 else '',
                 'Tipo': 'Columna faltante',
                 'Descripción': f'Columna "{col}" solo existe en {sheet1_name}',
                 'Fila': '-',
@@ -219,6 +220,7 @@ class SpreadsheetComparator:
 
         for col in only_in_2:
             differences.append({
+                'BOC': str(df1.iloc[i].iloc[7]) if df1.shape[1] > 7 else '',
                 'Tipo': 'Columna faltante',
                 'Descripción': f'Columna "{col}" solo existe en {sheet2_name}',
                 'Fila': '-',
@@ -235,12 +237,16 @@ class SpreadsheetComparator:
                 try:
                     val1 = df1.iloc[i][col]
                     val2 = df2.iloc[i][col]
+                    BOC1 = df1.iloc[i].iloc[7] if df1.shape[1] > 7 else None
+                    BOC2 = df2.iloc[i].iloc[7] if df2.shape[1] > 7 else None
+                    BOC = BOC1 if not pd.isna(BOC1) else BOC2
 
                     # Manejar valores NaN
                     if pd.isna(val1) and pd.isna(val2):
                         continue
                     elif pd.isna(val1) or pd.isna(val2) or val1 != val2:
                         differences.append({
+                            'BOC': str(BOC),
                             'Tipo': 'Valor diferente',
                             'Descripción': f'Diferencia en fila {i+1}, columna "{col}"',
                             'Fila': i+1,
@@ -255,6 +261,7 @@ class SpreadsheetComparator:
         if len(df1) > min_rows:
             for i in range(min_rows, len(df1)):
                 differences.append({
+                    'BOC': str(df1.iloc[i].iloc[7]) if df1.shape[1] > 7 else '',
                     'Tipo': 'Fila adicional',
                     'Descripción': f'Fila {i+1} solo existe en {sheet1_name}',
                     'Fila': i+1,
@@ -266,6 +273,7 @@ class SpreadsheetComparator:
         if len(df2) > min_rows:
             for i in range(min_rows, len(df2)):
                 differences.append({
+                    'BOC': str(df1.iloc[i].iloc[7]) if df1.shape[1] > 7 else '',
                     'Tipo': 'Fila adicional',
                     'Descripción': f'Fila {i+1} solo existe en {sheet2_name}',
                     'Fila': i+1,
